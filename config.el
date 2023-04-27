@@ -6,7 +6,7 @@
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets. It is optional.
-(setq user-full-name "John Doe"
+(setq user-full-name "Thomas Garriss"
       user-mail-address "john@doe.com")
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom:
@@ -76,26 +76,37 @@
 ;; they are implemented.
 
 ;;;; Here BEGINS my configuration!
+
+(setq! company-global-modes '(not esh-mode org-mode))
 (after! org
-  (setq org-src-window-setup 'split-window-sensibly)
+  ;;(setq org-src-window-setup 'split-window-sensibly)
   (set-popup-rule! "^\\*Org Src" :ignore t)
-  (setq! fill-column 70))
+  (setq! fill-column 70)
+  (if (require 'toc-org nil t)
+    (progn
+      (add-hook 'org-mode-hook 'toc-org-mode)
+      ;; enable in markdown, too
+      (add-hook 'markdown-mode-hook 'toc-org-mode))))
 
 ;;;; Keybindings
 (map! "C-x e" 'eshell)
+(map! "M-g M-b" 'org-mark-ring-goto)
+(map! "C-c C-v C-g" 'org-babel-goto-named-src-block)
+(map! :mode (org-mode c++-mode c-mode python-mode) "C-c C-c" #'comment-line)
+(map! "C-c C-d" 'treemacs)
 
 ;; function to toggle visibility for code blocks
 (defvar org-blocks-hidden t)
 (defun org-toggle-blocks ()
   (interactive)
   (if org-blocks-hidden
-      (org-show-block-all)
-    (org-hide-block-all))
+      (org-fold-show-all)
+    (org-hide-all))
   (setq-local org-blocks-hidden (not org-blocks-hidden)))
 (add-hook! 'org-mode-hook 'org-toggle-blocks)
 (map! :mode org-mode "C-c C-b" 'org-toggle-blocks)
 
-(set-face-attribute 'default nil :font "Fira Code" :height 135)
+(set-face-attribute 'default nil :font "Monaco" :height 135)
 
 (custom-set-faces
   '(org-level-1 ((t (:inherit outline-1 :height 1.25))))
@@ -105,5 +116,31 @@
   '(org-level-5 ((t (:inherit outline-5 :height 1.05))))
 )
 
-(setq projectile-project-search-path '("~/Projects/"))
+(setq! projectile-project-search-path '("~/Projects/"))
 (projectile-discover-projects-in-search-path)
+
+(setq! org-agenda-custom-commands
+       '(("h" "Daily Agenda"
+          ((agenda "" ((org-agenda-span 1)))
+           (todo)))
+         ("o" "other agenda"
+          ((agenda "")
+           (tags-todo "work")
+           (tags "office")))))
+
+;; (add-hook! 'org-mode-hook 'docker-compose-mode)
+
+(defun fix-c-indent-offset-according-to-syntax-context (key val)
+  ;; remove the old element
+  (setq c-offsets-alist (delq (assoc key c-offsets-alist) c-offsets-alist))
+  ;; new value
+  (add-to-list 'c-offsets-alist (cons key val)))
+
+(add-hook! 'c-mode-common-hook
+          (lambda ()
+            (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
+              ;; indent
+              (fix-c-indent-offset-according-to-syntax-context 'substatement-open 0))
+            ))
+
+(map! "C-S-c C-S-c" 'mc/edit-lines)

@@ -48,3 +48,7 @@
 ;(unpin! pinned-package another-pinned-package)
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
+
+(package! docker-compose-mode)
+(package! google-translate)
+;;(package! org-modern)
